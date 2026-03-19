@@ -1,4 +1,5 @@
 const User = require("../models/users");
+const Conversation = require("../models/conversation");
 const OtpGenerator = require("../utils/otpGenerator");
 const Response = require("../utils/responseHandller");
 const { sendEmailOTP } = require("../services/emailService");
@@ -144,27 +145,65 @@ const profileUpdate = async (req, res, next) => {
 
 // Check Authorization
 
-const checkAuthorization = async (req , res ,next)=>{
+const checkAuthorization = async (req, res, next) => {
   try {
     const userID = req.user.userID;
-    if(!userID){
+    if (!userID) {
       return Response(res, 400, "User not found");
     }
-    const user = await User.findById(userID)
-    if(!user){
+    const user = await User.findById(userID);
+    if (!user) {
       return Response(res, 400, "User not found");
     }
 
-    return Response(res, 200, "User is authorized and allow to use Chat App", { user });
-
+    return Response(res, 200, "User is authorized and allow to use Chat App", {
+      user,
+    });
   } catch (error) {
     console.error("Error on check authorization: ", error);
     return Response(res, 500, "Internal Server Error");
   }
-}
+};
+
+//getAllUsers
+const getAllUsers = async (req, res, next) => {
+  const loggedInUserID = req.user.userID;
+  try {
+    if (!loggedInUserID) {
+      return Response(res, 400, "User not found");
+    }
+    const users = await User.find({ _id: { $ne: loggedInUserID } })
+      .select("username phoneSuffix phoneNumber profilePic about isOnline")
+      .lean();
+
+    if (!users) {
+      return Response(res, 400, "Users not found");
+    }
+
+    const userwithconversation = await Promise.all(
+      users.map(async (user) => {
+        const conversation = await Conversation.findOne({
+          participants: { $all: [loggedInUserID, user?._id] },
+        })
+          .populate({
+            path: "lastMessage",
+            select: "content sender receiver createdAt",
+          })
+          .lean();
+
+        return { ...user, conversation: conversation || null };
+      }),
+    );
+
+    return Response(res, 200, "Users found successfully", { userwithconversation });
+  } catch (error) {
+    console.error("Error on get all users: ", error);
+    return Response(res, 500, "Internal Server Error");
+  }
+};
 
 //Log out
-const logout = (req , res ,next)=>{
+const logout = (req, res, next) => {
   try {
     res.clearCookie("auth_token");
     return Response(res, 200, "Logout successfully");
@@ -172,7 +211,13 @@ const logout = (req , res ,next)=>{
     console.error("Error on logout: ", error);
     return Response(res, 500, "Internal Server Error On LogOut");
   }
+};
 
-}
-
-module.exports = { sendOtp, verifyotp, profileUpdate , logout , checkAuthorization};
+module.exports = {
+  sendOtp,
+  verifyotp,
+  profileUpdate,
+  logout,
+  checkAuthorization,
+  getAllUsers
+};

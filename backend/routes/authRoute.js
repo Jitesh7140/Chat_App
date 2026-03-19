@@ -12,5 +12,6 @@ router.get('/logout' , authcontroller.logout)
 //protected routes
 router.put('/updateProfile' ,multerMiddleware.single('profilePic') , authMiddleware,authcontroller.profileUpdate)
 router.get('/checkAuth'  ,authMiddleware,authcontroller.checkAuthorization)
+router.get('/users'  ,authMiddleware,authcontroller.getAllUsers)
 
 module.exports = router;

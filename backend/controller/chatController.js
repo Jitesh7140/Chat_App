@@ -56,6 +56,20 @@ exports.sendMessage = async (req, res, next) => {
       .populate("sender", "username profilePic")
       .populate("receiver", "username profilePic");
 
+      
+
+    //emit soket event
+    if(req.socketUserMap && req.io){
+       const receiverSocketId = req.socketUserMap.get(receiverID)
+       if(receiverSocketId){
+        req.io.to(receiverSocketId).emit("receive_message", populatemessage);
+        message.messageStatus = "delivered"
+        await message.save(); 
+
+      } 
+        
+    }
+
     response(res, 200, "Message sent successfully", populatemessage);
   } catch (error) {
     console.log(error);
@@ -160,6 +174,25 @@ exports.markAsRead = async (req, res, next) => {
         $set: { massageStatus: "seen" },
       },
     );
+
+    //notify to sender 
+    if (req.socketUserMap && req.io) {
+      //broadcast to all connecting users
+      for (const message of messages) {
+        const senderSocketId = req.socketUserMap.get(message.sender.toString());
+        if (senderSocketId) {
+          const updatedMessage = {
+            _id:message._id,
+            messageStatus:"read"
+          }
+
+
+          req.io.to(senderSocketId).emit("message_read", updatedMessage);
+          await message.save()
+        }
+      }
+    }
+
     response(res, 200, "Messages marked as read successfully");
   } catch (error) {
     console.log(error);
@@ -181,6 +214,16 @@ exports.deleteMessage = async (req, res, next) => {
       return response(res, 403, "Unauthorized to delete this message");
     }
     await Message.deleteOne({ _id: messageID });
+
+     //emit soket event
+    if (req.socketUserMap && req.io) {
+       const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
+       if(receiverSocketId){
+        req.io.to(receiverSocketId).emit("message_deleted", messageID);
+       }
+      
+    }
+
 
     response(res, 200, "Message deleted successfully");
   } catch (error) {

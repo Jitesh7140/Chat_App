@@ -1,6 +1,6 @@
-const moongoos = require('mongooes')
+const moongoos = require('mongoose')
 
-const messageSchema = new moongoos.messageSchema({ 
+const messageSchema = new moongoos.Schema({ 
 
     conversation:{type:moongoos.Schema.Types.ObjectId,ref:'Conversation' , require:true},
     sender:{type:moongoos.Schema.Types.ObjectId, ref:'User' , require:true},

@@ -5,11 +5,10 @@ const app = express();
 const cors = require('cors')
 const dotenv = require('dotenv') 
 dotenv.config();
-const mongoose = require('mongoose')
 
 //other/User modules
 const authRoute = require('./routes/authRoute')
-
+const chatRoute = require('./routes/chatRoute') 
 
 const db = require('./config/db') 
 PORT = process.env.PORT;
@@ -27,6 +26,7 @@ app.use(cookieParser())                        //
 
 //routes
 app.use('/api/auth' , authRoute)
+app.use('/api/chats' , chatRoute)
  
 
  

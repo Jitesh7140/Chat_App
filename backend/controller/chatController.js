@@ -1,25 +1,26 @@
-const { response } = require("../utils/responseHandller");
+const response = require("../utils/responseHandller");
 const { uploadfiletocloudinary } = require("../config/imageCloud");
 const Conversation = require("../models/conversation");
 const Message = require("../models/message");
 
-exports.sendMassage = async (req, res, next) => {
+exports.sendMessage = async (req, res, next) => {
   try {
-    const { senderID, receiverID, content, massageStatus } = req.body;
+    const { senderID, receiverID, content, messageStatus } = req.body;
     const file = req.file;
 
-    //create conversation
-    const participents = [senderID, receiverID].sort();
-    const conversation = await Conversation.findOne({
-      participants: participents,
+    const participants = [senderID, receiverID].sort();
+
+    let conversation = await Conversation.findOne({
+      participants: { $all: participants, $size: 2 },
     });
 
     if (!conversation) {
       conversation = new Conversation({
-        participents,
+        participants,
       });
       await conversation.save();
     }
+
     let imageOrVideoUrl = null;
     let contentType = null;
 
@@ -28,27 +29,27 @@ exports.sendMassage = async (req, res, next) => {
       if (!uploadfile?.secure_url) {
         return res.status(400).json({ message: "file upload failed" });
       }
-      imageOrVideoUrl = uploadfile?.secure_url;
+      imageOrVideoUrl = uploadfile.secure_url;
       contentType = file.mimetype.startsWith("image") ? "image" : "video";
     } else if (content?.trim()) {
       contentType = "text";
     } else {
-      response(res, 400, "No content or file provided");
+      return response(res, 400, "No content or file provided");
     }
 
     const message = new Message({
-      conversationID: conversation._id,
+      conversation: conversation._id, // ✅ correct
       sender: senderID,
       receiver: receiverID,
       content,
-      massageStatus,
+      messageStatus,
       imageOrVideoUrl,
       contentType,
     });
+
     await message.save();
-    if (message?.content) {
-      conversation.lastMessage = message._id;
-    }
+
+    conversation.lastMessage = message._id;
     await conversation.save();
 
     const populatemessage = await Message.findById(message._id)
@@ -62,18 +63,126 @@ exports.sendMassage = async (req, res, next) => {
   }
 };
 
+
 // get all conversation
 exports.getConversation = async (req, res, next) => {
-  const userId = req.user.id;
+  const userId = req.user.userID;
+
+  if (!userId) {
+    return response(res, 400, "userID not found");
+  }
+
   try {
-    const conversation = await Conversation.find({
+    let conversation = await Conversation.find({
       participants: userId,
-    }).populate("participants", "username profilePic lastSeen isOnline").populate({path:"lastMessage",populate:{
-        path:"sender receiver",
-        select:"username profilePic" 
-    }}).sort({updatedAt:-1})
+    })
+      .populate("participants", "username profilePic lastSeen isOnline")
+      .populate({
+        path: "lastMessage",
+        populate: {
+          path: "sender receiver",
+          select: "username profilePic",
+        },
+      })
+      .sort({ updatedAt: -1 });
 
     response(res, 200, "Conversation fetched successfully", conversation);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// get message on specific conversation
+exports.getMessages = async (req, res, next) => {
+  const { conversationID } = req.params;
+  const userId = req.user.userID;
+  try {
+    const conversation = await Conversation.findById(conversationID);
+    // console.log("conversation: ", conversation);
+    if (!conversation) {
+      return response(res, 400, "Conversation not found in db");
+    }
+
+    if (!conversation.participants.some((p) => p.toString() === userId)) {
+      return response(res, 403, "Unauthorized to see this chat");
+    }
+
+    const messages = await Message.find({
+      conversation: conversationID, // ✅ correct
+    })
+      .populate("sender", "username profilePic")
+      .populate("receiver", "username profilePic")
+      .sort({ createdAt: 1 });
+
+    await Message.updateMany(
+      {
+        conversation: conversationID, // ✅
+        receiver: userId,
+        messageStatus: { $in: ["sent", "delivered"] },
+      },
+      {
+        messageStatus: "seen",
+      },
+    );
+
+    conversation.unreadCount = 0;
+    await conversation.save();
+
+    // console.log("message:", messages);
+
+    return response(res, 200, "Messages retrived successfully", messages);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//mark as read
+exports.markAsRead = async (req, res, next) => {
+  const { messageIds } = req.params;
+  const userId = req.user.userID;
+
+  try {
+    //get relevent message
+    let messages = await Message.find({
+      _id: { $in: messageIds },
+      receiver: userId,
+      massageStatus: { $in: ["sent", "delivered"] },
+    });
+
+    await Message.updateMany(
+      {
+        _id: { $in: messageIds },
+        receiver: userId,
+      },
+      {
+        $set: { massageStatus: "seen" },
+      },
+    );
+    response(res, 200, "Messages marked as read successfully");
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//delete msg
+exports.deleteMessage = async (req, res, next) => {
+  const { messageID } = req.params;
+  const userId = req.user.userID;
+
+  try {
+    const message = await Message.findById(messageID);
+    if (!message) {
+      return response(res, 404, "Message not found");
+    }
+    if (message.sender.toString() != userId) {
+      return response(res, 403, "Unauthorized to delete this message");
+    }
+    await Message.deleteOne({ _id: messageID });
+
+    response(res, 200, "Message deleted successfully");
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });

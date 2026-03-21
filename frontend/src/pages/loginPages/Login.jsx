@@ -39,7 +39,7 @@ function Login() {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 rounded-lg border border-gray-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
@@ -49,7 +49,7 @@ function Login() {
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 rounded-lg border border-gray-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
 
@@ -62,7 +62,7 @@ function Login() {
         </form>
 
         {/* Extra Links */}
-        <div className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-center mt-4 text-sm text-gray-400">
           Don’t have an account?{" "}
           <Link to="/register" className="text-blue-500 hover:underline">
             Sign up

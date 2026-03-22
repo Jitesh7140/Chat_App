@@ -21,10 +21,10 @@ db()
 app.use(express.json())                         // parse body data 
 app.use(express.urlencoded({extended:true}))   //  parse token on every request
 app.use(cookieParser())                        //  
-    // app.use(cors({                                  // Allow request only selected URL
-    //     origin:process.env.FRONTEND_URL,
-    //     credentials:true
-    // }))
+    app.use(cors({                                  // Allow request only selected URL
+        origin:process.env.FRONTEND_URL,
+        credentials:true
+    }))
 
 // create socket server
 const server  = http.createServer(app)

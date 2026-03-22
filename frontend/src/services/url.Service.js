@@ -1,10 +1,13 @@
-import axios from 'axios'
+import axios from 'axios';
 
-const API_URL = `${import.meta.env.REACT_APP_API_URL}/api/`
+// Vite mein 'VITE_' prefix zaroori hai
+const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/`;
 
-export const axiosInstance = axios.create({
+const axiosInstance = axios.create({
     baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
     },
-})
+});
+
+export default axiosInstance;

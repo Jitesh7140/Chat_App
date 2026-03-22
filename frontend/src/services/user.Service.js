@@ -1,8 +1,8 @@
-import axiosInstance from "./url.Service"
+import axiosInstance from "./url.Service.js"
 
-export const sendOtp = (phoneNumber , phoneSuffix , email)=>{
+export const sendOtp = async (phoneNumber , phoneSuffix , email)=>{
     try {
-        const res =  axiosInstance.post("/auth/sendOtp",{phoneNumber , phoneSuffix , email});
+        const res = await axiosInstance.post("/auth/sendOtp",{phoneNumber , phoneSuffix , email});
         return res.data;
     } catch (error) {
        console.log('error on send otp',error)
@@ -10,9 +10,9 @@ export const sendOtp = (phoneNumber , phoneSuffix , email)=>{
 
 }
 
-export const verifyOtp = (phoneNumber , phoneSuffix ,otp, email)=>{
+export const verifyOtp = async  (phoneNumber , phoneSuffix ,otp, email)=>{
     try {
-        const res =  axiosInstance.post("/auth/verifyOtp",{phoneNumber , phoneSuffix , otp, email});
+        const res = await axiosInstance.post("/auth/verifyOtp",{phoneNumber , phoneSuffix , otp, email});
         return res.data;
     } catch (error) {
         console.log('error on verify otp',error)
@@ -20,9 +20,9 @@ export const verifyOtp = (phoneNumber , phoneSuffix ,otp, email)=>{
 
 }
 
-export const logout = ()=>{
+export const logout = async ()=>{
     try {
-        const res =  axiosInstance.post("/auth/logout");
+        const res = await axiosInstance.post("/auth/logout");
         return res.data;
     } catch (error) {
         console.log('error on logout',error)
@@ -30,9 +30,9 @@ export const logout = ()=>{
 
 }
 
-export const UpdatUserProfile = (updatedData)=>{
+export const UpdatUserProfile = async (updatedData)=>{
     try {
-        const res =  axiosInstance.put("/auth/updateProfile",updatedData);
+        const res = await axiosInstance.put("/auth/updateProfile",updatedData);
         return res.data;
     } catch (error) {
         console.log('error on logout',error)
@@ -40,9 +40,9 @@ export const UpdatUserProfile = (updatedData)=>{
 
 }
 
-export const checkAuth = ( )=>{
+export const checkAuth = async  ( )=>{
     try {
-        const res =  axiosInstance.get("/auth/checkAuth"  );
+        const res = await axiosInstance.get("/auth/checkAuth"  );
         if(res.data.status === 'success'){
             return {isAuth:true , user:res?.data?.data}
         }else if(res.data.status === 'error'){
@@ -54,9 +54,9 @@ export const checkAuth = ( )=>{
 
 }
 
-export const getAllUsers = ( )=>{
+export const getAllUsers = async ( )=>{
     try {
-        const res =  axiosInstance.get("/auth/users");
+        const res = await axiosInstance.get("/auth/users");
         return res.data;
     } catch (error) {
         console.log('error on get all users',error)

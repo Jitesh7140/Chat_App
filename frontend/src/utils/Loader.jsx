@@ -5,7 +5,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 
 export default function Loader({ progress = 0 }) {
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-green-400 to-blue-500 flex flex-col items-center justify-center z-50">
+    <div className="fixed inset-0 bg-linear-to-br from-green-400 to-blue-500 flex flex-col items-center justify-center z-50">
       <motion.div
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}

@@ -9,8 +9,12 @@ import { useForm } from "react-hook-form";
 import useUserStore from "../../store/useUserStore";
 import useThemeStore from "../../store/themeStore";
 import { motion } from "framer-motion";
-import { FaWhatsapp, FaChevronDown } from "react-icons/fa";
-import { UpdatUserProfile, sendOtp, verifyOtp } from "../../services/user.Service.js";
+import { FaWhatsapp, FaChevronDown, FaPlus, FaUser } from "react-icons/fa";
+import {
+  UpdatUserProfile,
+  sendOtp,
+  verifyOtp,
+} from "../../services/user.Service.js";
 import { toast } from "react-toastify";
 
 //validation schema
@@ -73,7 +77,7 @@ function Login() {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [email, setEmail] = useState("");
   const [profilePic, setProfilePic] = useState(null);
-  const [selectedAvatar, setselectedAvtar] = useState(avatars[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState(avatars[0]);
   const [profilePicFile, setProfilePicFile] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -106,7 +110,7 @@ function Login() {
   const {
     register: profileRegister,
     handleSubmit: handleProfileSubmit,
-    formState: { errors: profileError },
+    formState: { errors: profileErrors },
     watch,
   } = useForm({
     resolver: yupResolver(profileValidationSchema),
@@ -189,34 +193,31 @@ function Login() {
     }
   };
 
-  const handleChange = (e)=>{
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
-    if(file){
-      setProfilePicFile(file)
-      setProfilePic(URL.createObjectURL(file))
-
+    if (file) {
+      setProfilePicFile(file);
+      setProfilePic(URL.createObjectURL(file));
     }
-  }
-
+  };
 
   // profile submit
   const onProfileSubmit = async (data) => {
     try {
       setLoading(true);
-      const fromData = new FormData()
-      fromData.append('username',data.username)
-      fromData.append('agreed',data.agreed)
-      if(profilePicFile){
-        fromData.append('media',profilePicFile)
-      }else{
-        fromData.append('profilePic',selectedAvatar)
+      const fromData = new FormData();
+      fromData.append("username", data.username);
+      fromData.append("agreed", data.agreed);
+      if (profilePicFile) {
+        fromData.append("media", profilePicFile);
+      } else {
+        fromData.append("profilePic", selectedAvatar);
       }
 
-      await UpdatUserProfile()
-      toast.success("Welcome back to ChatApp")
-      navigate('/')
-      resetLoginState()
-
+      await UpdatUserProfile(fromData);
+      toast.success("Welcome back to ChatApp");
+      navigate("/");
+      resetLoginState();
     } catch (error) {
       console.log("error on submitting", error);
       setError(error.message || "Failed to submit profile");
@@ -229,22 +230,18 @@ function Login() {
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-    setOtpValue("otp",newOtp.join(""))
-    if(value && index<5){
+    setOtpValue("otp", newOtp.join(""));
+    if (value && index < 5) {
       document.getElementById(`otp-${index + 1}`).focus();
-
     }
- 
   };
 
   const handleBack = () => {
     setStep(step - 1);
-    setUserPhoneData(null)
-    setOtp(["", "", "", "", "", ""])
+    setUserPhoneData(null);
+    setOtp(["", "", "", "", "", ""]);
     setError("");
   };
-
-   
 
   const ProgressBar = () => (
     <div
@@ -314,7 +311,10 @@ function Login() {
         )}
 
         {step === 1 && (
-          <form className="space-y-6" onSubmit={handleLoginSubmit(onLoginSubmit)}>
+          <form
+            className="space-y-6"
+            onSubmit={handleLoginSubmit(onLoginSubmit)}
+          >
             <div className="space-y-4">
               <p
                 className={`text-center text-sm font-medium ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
@@ -455,85 +455,224 @@ function Login() {
           </form>
         )}
 
-       {step === 2 && ( // dhyan rakna step 2 hona chahiye OTP ke liye
-  <motion.form 
-    initial={{ x: 20, opacity: 0 }} 
-    animate={{ x: 0, opacity: 1 }}
-    className="space-y-6" 
-    onSubmit={handleOtpSubmit(onOTPSubmit)}
-  >
-    <div className="space-y-6">
-      <div className="text-center">
-        <p className={`text-sm font-medium tracking-wide ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-          Verification Code
-        </p>
-        <p className={`text-xs mt-1 opacity-70 ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
-          Enter the 6-digit code sent to your device
-        </p>
-      </div>
+        {step === 2 && ( // dhyan rakna step 2 hona chahiye OTP ke liye
+          <motion.form
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="space-y-6"
+            onSubmit={handleOtpSubmit(onOTPSubmit)}
+          >
+            <div className="space-y-6">
+              <div className="text-center">
+                <p
+                  className={`text-sm font-medium tracking-wide ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  Verification Code
+                </p>
+                <p
+                  className={`text-xs mt-1 opacity-70 ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}
+                >
+                  Enter the 6-digit code sent to your device
+                </p>
+              </div>
 
-      {/* OTP Input Group */}
-      <div className="flex justify-center gap-2 sm:gap-3">
-        {otp.map((digit, index) => (
-          <input
-            key={index}
-            id={`otp-${index}`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={1}
-            value={digit || ""} 
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^\d*$/.test(val)) { // Only numbers allowed
-                handleOtpChange(index, val);
-                // Auto focus next
-                if (val && index < 5) {
-                  document.getElementById(`otp-${index + 1}`).focus();
-                }
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Backspace" && !digit && index > 0) {
-                document.getElementById(`otp-${index - 1}`).focus();
-              }
-            }}
-            className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-black border-2 rounded-2xl outline-none transition-all duration-200
-            ${theme === "dark" 
-              ? "bg-gray-800/40 border-gray-700 text-white focus:bg-gray-800 focus:border-green-500 shadow-inner" 
-              : "bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-green-500 shadow-sm"}
+              {/* OTP Input Group */}
+              <div className="flex justify-center gap-2 sm:gap-3">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    id={`otp-${index}`}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={1}
+                    value={digit || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (/^\d*$/.test(val)) {
+                        // Only numbers allowed
+                        handleOtpChange(index, val);
+                        // Auto focus next
+                        if (val && index < 5) {
+                          document.getElementById(`otp-${index + 1}`).focus();
+                        }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Backspace" && !digit && index > 0) {
+                        document.getElementById(`otp-${index - 1}`).focus();
+                      }
+                    }}
+                    className={`w-11 h-14 sm:w-12 sm:h-16 text-center text-2xl font-black border-2 rounded-2xl outline-none transition-all duration-200
+            ${
+              theme === "dark"
+                ? "bg-gray-800/40 border-gray-700 text-white focus:bg-gray-800 focus:border-green-500 shadow-inner"
+                : "bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-green-500 shadow-sm"
+            }
             ${otpError.otp ? "border-red-500 ring-1 ring-red-500" : "focus:ring-2 focus:ring-green-500/20"}`}
-          />
-        ))}
-      </div>
+                  />
+                ))}
+              </div>
 
-      {otpError.otp && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-[11px] text-center font-semibold bg-red-500/10 py-1 rounded-md">
-          {otpError.otp.message}
-        </motion.p>
-      )}
+              {otpError.otp && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-[11px] text-center font-semibold bg-red-500/10 py-1 rounded-md"
+                >
+                  {otpError.otp.message}
+                </motion.p>
+              )}
 
-      {/* Resend Logic (Uncomment if needed) */}
-      <div className="flex flex-col items-center gap-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/25 active:scale-[0.97] transition-all text-lg flex justify-center items-center"
-        >
-          {loading ? <Spinner /> : "Verify & Proceed"}
-        </button>
+              {/* Resend Logic (Uncomment if needed) */}
+              <div className="flex flex-col items-center gap-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-green-500/25 active:scale-[0.97] transition-all text-lg flex justify-center items-center"
+                >
+                  {loading ? <Spinner /> : "Verify & Proceed"}
+                </button>
 
-        <button 
-          type="button"
-          onClick={handleBack} 
-          className={`text-sm font-bold transition-colors ${theme === "dark" ? "text-gray-500 hover:text-white" : "text-gray-400 hover:text-gray-800"}`}
-        >
-          Change Phone Number?
-        </button>
-      </div>
-    </div>
-  </motion.form>
-)}
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className={`text-sm font-bold transition-colors ${theme === "dark" ? "text-gray-500 hover:text-white" : "text-gray-400 hover:text-gray-800"}`}
+                >
+                  Change Phone Number?
+                </button>
+              </div>
+            </div>
+          </motion.form>
+        )}
+
+        {step === 3 && (
+          <form onSubmit={handleProfileSubmit(onProfileSubmit)}>
+            <div className=" flex flex-col items-center mb-4">
+              <div className="relative w-24 h-24 mb-2">
+                <img
+                  src={profilePic || selectedAvatar}
+                  alt="profile"
+                  className="w-full h-full object-cover rounded-full"
+                />
+
+                <label
+                  htmlFor="profile-Pic"
+                  className="absolute bottom-0 right-0 bg-green-500 p-2 rounded-full cursor-pointer"
+                >
+                  <FaPlus className="w-5 h-5 text-white" />
+                </label>
+                <input
+                  type="file"
+                  id="profile-Pic"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              <p
+                className={`text-sm font-medium tracking-wide ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Choose an Avatars
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-2.5">
+                {avatars.map((avatar, index) => (
+                  <img
+                    key={index}
+                    src={avatar}
+                    alt="avatar"
+                    className={`w-16 h-16 object-cover rounded-full cursor-pointer ${selectedAvatar === avatar ? "border-2 border-green-500" : ""}`}
+                    onClick={() => setSelectedAvatar(avatar)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* --- Username Input --- */}
+            <div className="relative group">
+              <FaUser
+                className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200
+      ${profileErrors.username ? "text-red-400" : theme === "dark" ? "text-gray-500" : "text-gray-400"}
+      ${theme === "dark" ? "group-focus-within:text-green-500" : "group-focus-within:text-green-600"}`}
+              />
+
+              <input
+                type="text"
+                placeholder="Username"
+                {...profileRegister("username")}
+                className={`w-full py-3.5 pl-12 pr-5 border rounded-2xl outline-none transition-all duration-200
+      ${
+        theme === "dark"
+          ? "bg-gray-800/50 border-gray-600 text-white placeholder-gray-500"
+          : "bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400"
+      }
+      ${
+        profileErrors.username
+          ? "border-red-500 ring-1 ring-red-500"
+          : "focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+      }`}
+              />
+
+              {profileErrors.username && (
+                <p className="text-red-500 text-[11px] mt-1.5 ml-3 font-medium animate-in fade-in slide-in-from-top-1">
+                  {profileErrors.username.message}
+                </p>
+              )}
+            </div>
+
+            {/* --- Terms & Conditions Checkbox --- */}
+            <div className="space-y-1.5">
+              {" "}
+              {/* Added wrapper for better spacing */}
+              <div className="flex items-start space-x-3 px-1">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  {...profileRegister("agreed")}
+                  className={`mt-1 h-4 w-4 rounded border transition-all accent-green-500 cursor-pointer
+        ${theme === "dark" ? "bg-gray-800 border-gray-600" : "bg-gray-50 border-gray-300"}`}
+                />
+                <label
+                  htmlFor="terms"
+                  className={`text-sm cursor-pointer select-none ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
+                >
+                  I agree to the{" "}
+                  <a
+                    href="#"
+                    className="text-green-500 hover:text-green-600 font-medium hover:underline transition-colors"
+                  >
+                    Terms & Conditions
+                  </a>
+                </label>
+              </div>
+              {profileErrors.agreed && (
+                <p className="text-red-500 text-[11px] ml-8 font-medium animate-in fade-in slide-in-from-top-1">
+                  {profileErrors.agreed.message}
+                </p>
+              )}
+            </div>
+
+            {/* --- Submit Button --- */}
+            <button
+              type="submit"
+              disabled={!watch("agreed") || loading}
+              className="w-full flex justify-center items-center py-4 rounded-2xl text-lg font-bold text-white transition-all duration-200 
+             bg-green-500 hover:bg-green-600 active:scale-[0.98] shadow-lg shadow-green-500/25
+             disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none mt-2"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner className="w-5 h-5 animate-spin" />
+                  <span>Processing...</span>
+                </div>
+              ) : (
+                "Verify & Proceed"
+              )}
+            </button>
+          </form>
+        )}
       </motion.div>
     </div>
   );

@@ -23,7 +23,7 @@ const SideBar = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  console.log("user and pic " , user.user.profilePic)
+  // console.log("user and pic " , user.user.profilePic)
 
   useEffect(() => {
     if (location.pathname === "/") {

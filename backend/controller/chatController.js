@@ -49,7 +49,12 @@ exports.sendMessage = async (req, res, next) => {
 
     await message.save();
 
-    conversation.lastMessage = message._id;
+    if(message?.content){
+      conversation.lastMessage = message._id;
+
+    }
+    conversation.unreadCount += 1;
+
     await conversation.save();
 
     const populatemessage = await Message.findById(message._id)

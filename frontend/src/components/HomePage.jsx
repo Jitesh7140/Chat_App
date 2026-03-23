@@ -6,7 +6,7 @@ import useLayoutStore from "../store/layoutStore";
 import {getAllUsers} from "../services/user.Service"
 
 function HomePage() {
-  const SelectedContect = useLayoutStore((state) => state.SelectedContect);
+  
   const [AllUsers,setAllUsers] = useState([]);
 
   const getAllUser = async()=>{
@@ -20,11 +20,11 @@ function HomePage() {
     }
   }
 
-  useEffect(()=>{
-    getAllUser();
-  },[])
+ useEffect(() => {
+  getAllUser();
+}, []);
 
-  console.log(AllUsers)
+  // console.log("all users",AllUsers)
 
 
 
@@ -37,7 +37,7 @@ function HomePage() {
         transition={{ duration: 0.5 }}
         className="h-full"
       >
-        <ChatList />
+        <ChatList contacts={AllUsers}/>
       </motion.div>
     </Layout>
   );

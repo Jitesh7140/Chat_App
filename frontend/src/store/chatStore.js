@@ -1,0 +1,323 @@
+import { create } from "zustand";
+import axiosInstance from "../services/url.Service";
+import {getSocket} from "../services/chat.Service"
+
+export const useChatStore = create((set, get) => ({
+  conversation: [],
+  currentConversation: null,
+  messages: [],
+  loading: false,
+  error: null,
+  onlineUsers: new Map(),
+  typingUsers: new Map(),
+
+  //socket event setup
+  initsocketListners: () => {
+    const socket = getSocket();
+    if (socket) return;
+
+    //remove exixting listerners to prevent duplicate
+    socket.off("receive_message");
+    socket.off("user_typing");
+    socket.off("user_status");
+    socket.off("message_send");
+    socket.off("message_error");
+    socket.off("message_deleted");
+
+    //receive message
+    socket.on("receive_message", (message) => {
+      const { currentConversation } = get();
+      if (
+        currentConversation &&
+        message.conversationId === currentConversation._id
+      ) {
+        set((state) => {
+          messages: [...state.messages, message];
+        });
+      }
+    });
+
+    //confirm message dilivery
+    socket.on("message_send", (message) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === message?._id ? { ...msg } : msg,
+        ),
+      }));
+    });
+
+    // update msg status
+    socket.on("message_status_update", ({ messageId, messageStatus }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) => {
+          if (msg._id === messageId) {
+            return { ...msg, messageStatus };
+          } else {
+            return msg;
+          }
+        }),
+      }));
+    });
+
+    // reaction update
+    socket.on("reaction_update", ({ messageId, reactions }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) => {
+          if (msg._id === messageId) {
+            return { ...msg, reactions };
+          } else {
+            return msg;
+          }
+        }),
+      }));
+    });
+
+    // delete msg from local state
+    socket.on("message_deleted", ({ deletedmessageId }) => {
+      set((state) => ({
+        messages: state.messages.filter((msg) => {
+          msg._id !== deletedmessageId;
+        }),
+      }));
+    });
+
+    // message sending error
+    socket.on("message_error", (error) => {
+      console.log("message error", error);
+    });
+
+    // listner for typing user
+    socket.on("user_typing", ({ userId, conversationId, isTyping }) => {
+      set((state) => {
+        const newtypingUsers = new Map(state.typingUsers);
+
+        if (!newtypingUsers.has(conversationId)) {
+          newtypingUsers.set(conversationId, new set());
+        }
+
+        const typingSet = newtypingUsers.get(conversationId);
+        if (isTyping) {
+          typingSet.add(userId);
+        } else {
+          typingSet.delete(userId);
+        }
+        return { typingUsers: newtypingUsers };
+      });
+    });
+
+    //track online users
+    socket.on("user_status", ({ userId, isOnline, lastSeen }) => {
+      set((state) => {
+        const newOnlineUsers = new Map(state.onlineUsers);
+
+        newOnlineUsers.set(userId, { isOnline, lastSeen });
+        return { onlineUsers: newOnlineUsers };
+      });
+    });
+
+    // emit status check for all users online
+    const { conversation } = get();
+    if (conversation?.data?.length > 0) {
+      conversation.data?.forEach((conv) => {
+        const otherUser = conv.participants.find(
+          (p) => p._id !== get().currentUser._id,
+        );
+        if (otherUser?._id) {
+          socket.emit("get_user_status", otherUser._id, (status) => {
+            set((state) => {
+              const newOnlineUsers = new Map(state.onlineUsers);
+              newOnlineUsers.set(state.userID, {
+                isOnline: state.isOnline,
+                lastSeen: state.lastSeen,
+              });
+              return { onlineUsers: newOnlineUsers };
+            });
+          });
+        }
+      });
+    }
+  },
+
+  setCurrentUser: (user) => set({ currentUser: user }),
+
+  fetchConversation: async () => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await axiosInstance.get("chats/conversations");
+      (set({ conversation: data, loading: false }), get().initsocketListners());
+      return data;
+    } catch (error) {
+      set({
+        error: error?.response?.data?.message || error?.message,
+        loading: false,
+      });
+      return null;
+    }
+  },
+
+  //fetch message for conversation
+  fetchMassages: async (conversationID) => {
+    if (!conversationID) return;
+    set({ loading: true, error: null });
+    try {
+      const { data } = await axiosInstance.get(
+        `chats/getConversation/${conversationID}/messages`,
+      );
+
+      const messageArray = data.data || data || [];
+
+      set({
+        messages: messageArray,
+        loading: false,
+        currentConversation: conversationID,
+      });
+
+      //mark unread msg as read
+
+      return messageArray;
+    } catch (error) {
+      set({
+        error: error?.response?.data?.message || error?.message,
+        loading: false,
+      });
+      return [];
+    }
+  },
+
+  //  send msg in real time
+
+  //   sendMessage: async (formData) => {
+
+  //   },
+
+  recevieMessage: (message) => {
+    if (!message) return;
+
+    const { currentConversation, currentUser, messages } = get();
+
+    const messageExists = messages.some((msg) => msg._id === message._id);
+    if (messageExists) return;
+
+    if (message.conversation === currentConversation) {
+      set((state) => ({
+        message: [...state.message, message],
+      }));
+    }
+
+    //update conversation and
+    set((state) => {
+      const updateConversation = state.conversation?.data?.map((conv) => {
+        if (conv._id === message.conversation) {
+          return {
+            ...conv,
+            lastMessage: message,
+            unreadCount:
+              message?.receiver?._id === currentUser?._id
+                ? (conv.unreadCount || 0) + 1
+                : conv.unreadCount || 0,
+          };
+        }
+        return conv;
+      });
+      return {
+        conversation: {
+          ...state.conversation,
+          data: updateConversation,
+        },
+      };
+    });
+  },
+
+  // mark as read
+  markMessageAsRead: async () => {
+    const { messages, currentUser } = get();
+    if (!messages.length || !currentUser) return;
+
+    const unreadIds = messages
+      .filter(
+        (msg) =>
+          msg.messageStatus === "read" &&
+          msg.receiver?._id === currentUser?._id,
+      )
+      .map((msg) => msg._id)
+      .filter(Boolean);
+
+    if (unreadIds.length === 0) return;
+    try {
+      const { data } = await axiosInstance.put("chats/message/read", {
+        messageIds: unreadIds,
+      });
+
+      set((state) => ({
+        messages: state.messages.map((msg) => {
+          if (unreadIds.includes(msg._id)) {
+            return { ...msg, messageStatus: "read" };
+          }
+          return msg;
+        }),
+      }));
+
+      const socket = getSocket();
+      if (socket) {
+        socket.emit("message_read", {
+          messageIds: unreadIds,
+          senderId: messages[0]?.sender?.id,
+        });
+      }
+    } catch (error) {
+      console.log("error in markMessageAsRead", error);
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      await axiosInstance.delete(`/chats/message/${messageId}`);
+
+      set((state) => ({
+        messages: state.messsage?.filter((msg) => msg?._id !== messageId),
+      }));
+
+      return true;
+    } catch (error) {
+      console.log("error in deleteMessage", error);
+      set({ error: error.response?.data?.message || error.message });
+      return false;
+    }
+  },
+
+  // add reaction
+  addReaction: async (messageId, emoji) => {
+    const socket = getSocket();
+    const { currentUser } = get();
+
+    if (socket && currentUser) {
+      socket.emit("add_reaction", {
+        messageId,
+        emoji,
+        userId: currentUser?._id,
+        reactionUserId: currentUser._id,
+      });
+    }
+  },
+
+
+  startTyping : ( receiverId)=>{
+    const socket = getSocket();
+    if(socket){
+      socket.emit("typing_start",{ receiverId});
+    }
+  },
+
+  stopTyping : (  receiverId)=>{
+    const {currentConversation} = get();
+    const socket = getSocket();
+    if(socket && currentConversation && receiverId){
+      socket.emit("typing_stop",{ receiverId});
+    }
+  },
+
+  
+
+
+
+}));

@@ -24,7 +24,7 @@ const initializeSoket = (server) => {
     let userId = null;
 
     // handle user connection and mark them online in db
-    socket.on("user_login", async (connectingUserId) => {
+    socket.on("user_connect", async (connectingUserId) => {
       try {
         userId = connectingUserId;
         onlineUser.set(userId, socket.id);
@@ -190,7 +190,7 @@ const initializeSoket = (server) => {
         }
       },
     );
-    
+
     // handle disconnect
     const handleDisconnect = async () => {
       if (!userId) return;
@@ -223,11 +223,9 @@ const initializeSoket = (server) => {
       } catch (error) {
         console.log("error in handleDisconnect", error);
       }
-    }; 
+    };
     socket.on("disconnect", handleDisconnect);
-    
   });
-
 
   //attaced the online user map for external use
   io.socketUsermap = onlineUser;

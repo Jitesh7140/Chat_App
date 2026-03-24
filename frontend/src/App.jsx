@@ -6,8 +6,23 @@ import HomePage from "./components/HomePage";
 import Status from "./pages/statusPages/Status";
 import Setting from "./pages/settingPages/setting";
 import { ProtectedRoute, PublicRoute } from "./protected";
+import useUserStore from "./store/useUserStore";
+import { useEffect } from "react";
+import { disconnectSocket, intializeSocket } from "./services/chat.Service";
+import { disconnect } from "mongoose";
 
 function App() {
+  const {user} = useUserStore();
+
+  useEffect(()=>{
+    if(user?._id){
+      const socket = intializeSocket();
+    }
+    return ()=>{
+      disconnectSocket()
+    }
+  },[user])
+
   return (
     <>
       <ToastContainer

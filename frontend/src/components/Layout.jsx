@@ -35,43 +35,43 @@ const Layout = ({
     >
       {!isMobile && <SideBar />}
 
-      <div
-        className={`flex-1 flex overflow-hidden ${isMobile ? "flex-col" : ""}`}
+      <div className={`flex-1 flex overflow-hidden ${isMobile ? "flex-col" : ""}`}>
+  <AnimatePresence initial={false} mode="popLayout">
+    {/* --- CHAT LIST SECTION --- */}
+    {/* Mobile par tabhi dikhao jab koi contact select NA HO. Desktop par hamesha dikhao. */}
+    {(!isMobile || !SelectedContect) && (
+      <motion.div
+        key="chatlist"
+        initial={isMobile ? { x: -300, opacity: 0 } : false}
+        animate={{ x: 0, opacity: 1 }}
+        exit={isMobile ? { x: -300, opacity: 0 } : { opacity: 0 }}
+        transition={{ type: "tween", duration: 0.3 }}
+        className={`${isMobile ? "w-full" : "w-2/5"} h-full border-r border-gray-200`}
       >
-        <AnimatePresence initial={false}>
-          {!SelectedContect && !isMobile && (
-            
-            <motion.div
-            key="chatlist"
-            initial={{ x:isMobile?"-100%": 0 }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type:"tween"}}
-            className={`w-full h-full md:w-2/5 ${isMobile ? "pb-16" : ""}`}
-            >
-              {children}
-            </motion.div>
-            
+        {children}
+      </motion.div>
+    )}
 
-          )}
-
-          {SelectedContect || !isMobile && (
-            
-            <motion.div
-            key="chatWindow"
-            initial={{ x:isMobile?"-100%": 0 }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type:"tween"}}
-            className="w-full h-full"
-            >
-              <ChatWindow SelectedContect={SelectedContect} setSelectedContect={setSelectedContect} isMobile={isMobile}/>
-            </motion.div>
-            
-
-          )}
-        </AnimatePresence>
-      </div>
+    {/* --- CHAT WINDOW SECTION --- */}
+    {/* Mobile par tabhi dikhao jab contact select HO. Desktop par hamesha dikhao. */}
+    {(!isMobile || SelectedContect) && (
+      <motion.div
+        key="chatWindow"
+        initial={isMobile ? { x: 300, opacity: 0 } : false}
+        animate={{ x: 0, opacity: 1 }}
+        exit={isMobile ? { x: 300, opacity: 0 } : { opacity: 0 }}
+        transition={{ type: "tween", duration: 0.3 }}
+        className="flex-1 h-full"
+      >
+        <ChatWindow 
+          SelectedContect={SelectedContect} 
+          setSelectedContect={setSelectedContect} 
+          isMobile={isMobile} 
+        />
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
 
       {isMobile && <SideBar/>}
 

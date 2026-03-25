@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { useUserStorepersist } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 
-const  = create(
+const useUserStore = create(
   persist(
     (set) => ({
       user: null,

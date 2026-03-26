@@ -22,7 +22,7 @@ const ChatList = ({ contacts }) => {
   );
 
   // console.log(" users: ", users);
-  console.log("filter contacts: ", filteredContacts);
+  // console.log("filter contacts: ", filteredContacts);
   return (
     <div
       className={`w-full border-r h-screen ${theme === "dark" ? "bg-[rgb(17,27,33)] border-gray-200" : "bg-white border-gray-200"}`}

@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import useThemeStore from "../store/themeStore";
 import SideBar from "./SideBar";
-import ChatWindow from "../pages/chatSection/ChatWindow"
+import ChatWindow from "../pages/chatSection/ChatWindow";
 
 const Layout = ({
   children,
@@ -35,45 +35,47 @@ const Layout = ({
     >
       {!isMobile && <SideBar />}
 
-      <div className={`flex-1 flex overflow-hidden ${isMobile ? "flex-col" : ""}`}>
-  <AnimatePresence initial={false} mode="popLayout">
-    {/* --- CHAT LIST SECTION --- */}
-    {/* Mobile par tabhi dikhao jab koi contact select NA HO. Desktop par hamesha dikhao. */}
-    {(!isMobile || !SelectedContect) && (
-      <motion.div
-        key="chatlist"
-        initial={isMobile ? { x: -300, opacity: 0 } : false}
-        animate={{ x: 0, opacity: 1 }}
-        exit={isMobile ? { x: -300, opacity: 0 } : { opacity: 0 }}
-        transition={{ type: "tween", duration: 0.3 }}
-        className={`${isMobile ? "w-full" : "w-2/5"} h-full border-r border-gray-200`}
+      <div
+        className={`flex-1 flex overflow-hidden ${isMobile ? "flex-col" : ""}`}
       >
-        {children}
-      </motion.div>
-    )}
+        <AnimatePresence initial={false} mode="popLayout">
+          {/* --- CHAT LIST SECTION --- */}
+          {/* Mobile par tabhi dikhao jab koi contact select NA HO. Desktop par hamesha dikhao. */}
+          {(!isMobile || !SelectedContect) && (
+            <motion.div
+              key="chatlist"
+              initial={isMobile ? { x: -300, opacity: 0 } : false}
+              animate={{ x: 0, opacity: 1 }}
+              exit={isMobile ? { x: -300, opacity: 0 } : { opacity: 0 }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className={`${isMobile ? "w-full" : "w-2/9"} h-full border-r border-gray-200`}
+            >
+              {children}
+            </motion.div>
+          )}
 
-    {/* --- CHAT WINDOW SECTION --- */}
-    {/* Mobile par tabhi dikhao jab contact select HO. Desktop par hamesha dikhao. */}
-    {(!isMobile || SelectedContect) && (
-      <motion.div
-        key="chatWindow"
-        initial={isMobile ? { x: 300, opacity: 0 } : false}
-        animate={{ x: 0, opacity: 1 }}
-        exit={isMobile ? { x: 300, opacity: 0 } : { opacity: 0 }}
-        transition={{ type: "tween", duration: 0.3 }}
-        className="flex-1 h-full"
-      >
-        <ChatWindow 
-          SelectedContect={SelectedContect} 
-          setSelectedContect={setSelectedContect} 
-          isMobile={isMobile} 
-        />
-      </motion.div>
-    )}
-  </AnimatePresence>
-</div>
+          {/* --- CHAT WINDOW SECTION --- */}
+          {/* Mobile par tabhi dikhao jab contact select HO. Desktop par hamesha dikhao. */}
+          {(!isMobile || SelectedContect) && (
+            <motion.div
+              key="chatWindow"
+              initial={isMobile ? { x: 300, opacity: 0 } : false}
+              animate={{ x: 0, opacity: 1 }}
+              exit={isMobile ? { x: 300, opacity: 0 } : { opacity: 0 }}
+              transition={{ type: "tween", duration: 0.3 }}
+              className="flex-1 h-full"
+            >
+              <ChatWindow
+                SelectedContect={SelectedContect}
+                setSelectedContect={setSelectedContect}
+                isMobile={isMobile}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {isMobile && <SideBar/>}
+      {isMobile && <SideBar />}
 
       {isThemeDialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -101,7 +103,7 @@ const Layout = ({
               Close
             </button>
           </div>
-        </div> 
+        </div>
       )}
 
       {isStatusPreviewOpen && (

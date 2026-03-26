@@ -9,18 +9,27 @@ import { ProtectedRoute, PublicRoute } from "./protected";
 import useUserStore from "./store/useUserStore";
 import { useEffect } from "react";
 import { disconnectSocket, intializeSocket } from "./services/chat.Service";
+import { useChatStore } from "./store/chatStore";
 
 function App() {
-  const {user} = useUserStore();
+  const { user } = useUserStore();
 
-  useEffect(()=>{
-    if(user?._id){
+  const { initsocketListners, setCurrentUser , cleanUp } = useChatStore();
+
+  useEffect(() => {
+    if (user?._id) {
       const socket = intializeSocket();
+
+      if (socket) {
+        setCurrentUser(user);
+        initsocketListners();
+      }
     }
-    return ()=>{
-      disconnectSocket()
-    }
-  },[user])
+    return () => {
+     cleanUp()
+      disconnectSocket();
+    };
+  }, [user , setCurrentUser , initsocketListners , cleanUp]);
 
   return (
     <>

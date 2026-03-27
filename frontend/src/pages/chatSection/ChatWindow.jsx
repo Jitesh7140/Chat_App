@@ -191,7 +191,7 @@ const ChatWindow = ({ SelectedContect, setSelectedContect }) => {
       }, {})
     : {};
 
-  const handleReaction = (messageId, emoji) => {
+  const handleReaction = (messageId, emoji) => { 
     addReaction(messageId, emoji);
   };
 

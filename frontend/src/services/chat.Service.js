@@ -28,9 +28,9 @@ export const intializeSocket = () => {
 
     // connection event
     socket.on("connect", () => {
-        console.log("socket Connected ✅");
+        console.log("socket Connected ✅" );
         // User ID bhej rahe hain connection par
-        socket.emit("user_connect", user._id);
+        socket.emit("user_connect", user.user._id);
     });
 
     socket.on("connect_error", (error) => {

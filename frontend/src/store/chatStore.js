@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import axiosInstance from "../services/url.Service";
 import { getSocket } from "../services/chat.Service";
+import useUserStore from "../store/useUserStore";
 
 export const useChatStore = create((set, get) => ({
   conversation: [],
@@ -14,7 +15,12 @@ export const useChatStore = create((set, get) => ({
   //socket event setup
   initsocketListners: () => {
     const socket = getSocket();
-    if (socket) return;
+    if (!socket) {
+      console.log("Socket not found, retrying...");
+      return;
+    } // ✅ Sabse pehle purane listeners hatao (Clean up)
+    socket.off("message_reaction_update");
+    socket.off("receive_message");
 
     //remove exixting listerners to prevent duplicate
     socket.off("receive_message");
@@ -48,6 +54,7 @@ export const useChatStore = create((set, get) => ({
 
     // update msg status
     socket.on("message_status_update", ({ messageId, messageStatus }) => {
+      console.log("message status update", messageId, messageStatus);
       set((state) => ({
         messages: state.messages.map((msg) => {
           if (msg._id === messageId) {
@@ -59,16 +66,13 @@ export const useChatStore = create((set, get) => ({
       }));
     });
 
-    // reaction update
-    socket.on("reaction_update", ({ messageId, reactions }) => {
+    // reaction update listener
+    socket.on("message_reaction_update", ({ messageId, reaction }) => {
+      // console.log("REACTION RECEIVED!", messageId, reaction); // Ye ab chalega
       set((state) => ({
-        messages: state.messages.map((msg) => {
-          if (msg._id === messageId) {
-            return { ...msg, reactions };
-          } else {
-            return msg;
-          }
-        }),
+        messages: state.messages.map((msg) =>
+          msg._id === messageId ? { ...msg, reaction: reaction } : msg,
+        ),
       }));
     });
 
@@ -92,7 +96,7 @@ export const useChatStore = create((set, get) => ({
         const newtypingUsers = new Map(state.typingUsers);
 
         if (!newtypingUsers.has(conversationId)) {
-          newtypingUsers.set(conversationId, new set());
+          newtypingUsers.set(conversationId, new Set());
         }
 
         const typingSet = newtypingUsers.get(conversationId);
@@ -356,7 +360,7 @@ export const useChatStore = create((set, get) => ({
       await axiosInstance.delete(`/chats/message/${messageId}`);
 
       set((state) => ({
-        messages: state.messsage?.filter((msg) => msg?._id !== messageId),
+        messages: state.messages.filter((msg) => msg._id !== messageId),
       }));
 
       return true;
@@ -370,15 +374,19 @@ export const useChatStore = create((set, get) => ({
   // add reaction
   addReaction: async (messageId, emoji) => {
     const socket = getSocket();
-    const { currentUser } = get();
+    const user = useUserStore.getState().user?.user; // Sahi path check karein
 
-    if (socket && currentUser) {
+    // console.log("Emitting with:", { messageId, emoji, userId: user?._id });
+
+    if (socket && user?._id) {
       socket.emit("add_reaction", {
         messageId,
         emoji,
-        userId: currentUser?._id,
-        reactionUserId: currentUser._id,
+        userId: user._id, // Backend 'userId' expect kar raha hai (destructuring check karein)
+        reactionUserId: user._id,
       });
+    } else {
+      console.log("Socket ya User missing hai!");
     }
   },
 

@@ -27,8 +27,9 @@ const initializeSoket = (server) => {
     socket.on("user_connect", async (connectingUserId) => {
       try {
         userId = connectingUserId;
+        // console.log("user connected", userId);
         onlineUser.set(userId, socket.id);
-        socket.join(userId);
+        socket.join(userId );
 
         //update user in db
         await User.findByIdAndUpdate(userId, {
@@ -131,26 +132,27 @@ const initializeSoket = (server) => {
     // Add or update reaction on message
     socket.on(
       "add_reaction",
-      async ({ messageId, emoji, userId, reactionUserId }) => {
+      async ({ messageId, emoji, userId:reactionUserId }) => {
+        
         try {
           const message = await Message.findById(messageId);
           if (!message) return;
 
-          const existingReaction = message.reactions.findById(
-            (r) => r.user.tostring() === reactionUserId,
+          const existingReaction = message.reaction.findIndex(
+            (r) => r.user.toString() === reactionUserId,
           );
 
           if (existingReaction > -1) {
-            const existing = message.reactions(existingReaction);
+            const existing = message.reaction[existingReaction];
             if (existing.emoji === emoji) {
               // remove same reaction
-              message.reactions.splice(existingReaction, 1);
+              message.reaction.splice(existingReaction, 1);
             } else {
               // update reaction
-              message.reactions[existingReaction].emoji = emoji;
+              message.reaction[existingReaction].emoji = emoji;
             }
           } else {
-            message.reactions.push({ user: reactionUserId, emoji });
+            message.reaction.push({ user: reactionUserId, emoji });
           }
 
           await message.save();
@@ -158,18 +160,20 @@ const initializeSoket = (server) => {
           const populatemessage = await Message.findById(message._id)
             .populate("sender", "username profilePic")
             .populate("receiver", "username profilePic")
-            .populate("reactions.user", "username");
+            .populate("reaction.user", "username");
+
+             
 
           const reactionUpdated = {
             messageId,
-            reactions: populatemessage.reactions,
+            reaction: populatemessage.reaction,
           };
 
           const senderSocket = onlineUser.get(
-            populatemessage.sender._id.tostring(),
+            populatemessage.sender._id.toString(),
           );
           const receiverSocket = onlineUser.get(
-            message.receiver?._id.tostring(),
+            message.receiver?._id.toString(),
           );
 
           if (senderSocket) {
@@ -177,7 +181,7 @@ const initializeSoket = (server) => {
               "message_reaction_update",
               reactionUpdated,
             );
-          }
+          } 
 
           if (receiverSocket) {
             io.to(receiverSocket).emit(
@@ -193,7 +197,7 @@ const initializeSoket = (server) => {
 
     // handle disconnect
     const handleDisconnect = async () => {
-      if (!userId) return;
+      if (!userId) return; 
 
       try {
         onlineUser.delete(userId);

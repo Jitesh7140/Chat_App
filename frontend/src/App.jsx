@@ -27,7 +27,7 @@ function App() {
     }
     return () => {
      cleanUp()
-      disconnectSocket();
+    disconnectSocket();
     };
   }, [user , setCurrentUser , initsocketListners , cleanUp]);
 

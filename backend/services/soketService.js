@@ -56,6 +56,8 @@ const initializeSoket = (server) => {
 
     // froward msg to reciver
     socket.on("send_message", async (messageIds, senderId) => {
+      console.log("messageIds", messageIds);
+      console.log("senderId", senderId);
       try {
         await Message.updateMany(
           { _id: { $in: messageIds } },
@@ -204,7 +206,7 @@ const initializeSoket = (server) => {
 
         if (typingUsers.has(userId)) {
           const userTyping = typingUsers.get(userId);
-          Object.keys().forEach((key) => {
+          Object.keys(userTyping).forEach((key) => {
             if (key.endsWith("_timeout")) clearTimeout(userTyping[key]);
           });
 

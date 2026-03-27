@@ -46,7 +46,8 @@ export const useChatStore = create((set, get) => ({
     });
 
     //confirm message dilivery
-    socket.on("message_send", (message) => {
+    socket.on("send_message", (message) => {
+      // console.log("message sent", message);
       set((state) => ({
         messages: state.messages.map((msg) =>
           msg._id === message?._id ? { ...msg } : msg,
@@ -195,16 +196,17 @@ export const useChatStore = create((set, get) => ({
   //  send msg in real time
 
   sendMessage: async (formData) => {
-    const senderId = formData.get("senderId");
-    const receiverId = formData.get("receiverId");
+    const senderId = formData.get("senderID");
+    const receiverId = formData.get("receiverID");
     const content = formData.get("content");
     const media = formData.get("media");
     const messageStatus = formData.get("messageStatus");
 
     const socket = getSocket();
     const { conversation } = get();
+
     let conversationId = null;
-    if (conversation?.data > 0) {
+    if (conversation?.data?.length > 0) {
       const conversatio = conversation.data.find(
         (conv) =>
           conv.participants.some((p) => p._id === senderId) &&
@@ -235,6 +237,10 @@ export const useChatStore = create((set, get) => ({
       messageStatus: messageStatus,
     };
 
+    // for (let [key, value] of formData.entries()) {
+    //   console.log(`${key}:`, value);
+    // }
+
     // add temp message to state
     set((state) => ({
       messages: [...state.messages, optimisticMessage],
@@ -243,7 +249,7 @@ export const useChatStore = create((set, get) => ({
     try {
       const { data } = await axiosInstance.post("chats/sendMessage", formData, {
         headers: {
-          "Content-Type": "multipart/form-data",
+          "Content-Type": undefined,
         },
       });
 
@@ -275,6 +281,8 @@ export const useChatStore = create((set, get) => ({
     if (!message) return;
 
     const { currentConversation, currentUser, messages } = get();
+
+    // console.log("message: ", message);
 
     const messageExists = messages.some((msg) => msg._id === message._id);
     if (messageExists) return;

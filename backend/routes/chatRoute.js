@@ -8,7 +8,7 @@ const { multerMiddleware } = require('../config/imageCloud');
 
 
 //protected routes
-router.post('/sendMessage' ,multerMiddleware.single('file'), authMiddleware,chatcontroller.sendMessage) 
+router.post('/sendMessage' ,multerMiddleware.single('media'), authMiddleware,chatcontroller.sendMessage) 
 router.get('/getConversation' , authMiddleware,chatcontroller.getConversation) 
 router.get('/getConversation/:conversationID/messages' , authMiddleware,chatcontroller.getMessages) 
 

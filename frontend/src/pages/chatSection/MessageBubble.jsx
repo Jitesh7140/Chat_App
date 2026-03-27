@@ -20,12 +20,13 @@ const MessageBubble = ({
   onReact,
   deleteMessage,
 }) => {
-  // console.log("message", message);
+  console.log("message", message);
 
   const [showEnojiPicker, setShowEnojiPicker] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const messageRef = useRef(null);
   const [showOptions, setShowOptions] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const optionRef = useRef(null);
 
   const emojiPickerRef = useRef(null);
@@ -68,17 +69,43 @@ const MessageBubble = ({
           {message.contentType === "text" && (
             <p className="mr-2">{message.content}</p>
           )}
+
           {message.contentType === "image" && (
             <div>
               <img
                 src={message.imageOrVideoUrl}
-                alt="image/video"
-                className="rounded-lg max-w-xs"
+                alt="chat-attachment"
+                // Click karne par preview khulega
+                onClick={() => setIsPreviewOpen(true)}
+                className="rounded-lg max-w-xs cursor-pointer hover:opacity-90 transition-opacity"
               />
-              <p className="mt-2">{message.content}</p>
+              {message.content && <p className="mt-2">{message.content}</p>}
             </div>
           )}
         </div>
+
+        {isPreviewOpen && (
+          <div
+            className="fixed inset-0 z-999 bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-300"
+            onClick={() => setIsPreviewOpen(false)} // Bahar click karne par band
+          >
+            {/* Cross Button */}
+            <button
+              className="absolute top-5 right-5 text-white text-3xl hover:text-gray-300 z-1000"
+              onClick={() => setIsPreviewOpen(false)}
+            >
+              <RxCross2 />
+            </button>
+
+            {/* Full Image */}
+            <img
+              src={message.imageOrVideoUrl}
+              alt="Preview"
+              className="max-w-full max-h-full object-contain rounded-sm shadow-2xl scale-in-center"
+              onClick={(e) => e.stopPropagation()} // Image pe click karne se band NA ho
+            />
+          </div>
+        )}
 
         <div className="self-end flex justify-end items-center gap-1 text-xs opacity-60 mt-2 ml-2">
           <span>{format(new Date(message.createdAt), "HH:mm")}</span>
@@ -96,12 +123,12 @@ const MessageBubble = ({
           )}
         </div>
 
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity z-20">
+        <div className="absolute top-1 -right-3 opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <button
             onClick={() => {
               setShowOptions((prev) => !prev);
             }}
-            className={`p-1 rounded-full ${theme === "dark" ? "  text-gray-200" : " text-gray-700"}`}
+            className={`p-3 left-1 rounded-full ${theme === "dark" ? "  text-gray-100" : " text-gray-700"}`}
           >
             <HiDotsVertical />
           </button>
@@ -203,7 +230,7 @@ const MessageBubble = ({
                 }}
                 className="flex items-center w-full px-4 py-2 gap-3 rounded-lg text-red-600"
               >
-                <FaRegTrashAlt  className="text-red-600" size={14} />
+                <FaRegTrashAlt className="text-red-600" size={14} />
                 <span>Delete</span>
               </button>
             )}

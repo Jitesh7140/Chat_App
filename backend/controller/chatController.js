@@ -8,6 +8,8 @@ exports.sendMessage = async (req, res, next) => {
     const { senderID, receiverID, content, messageStatus } = req.body;
     const file = req.file;
 
+    
+
     const participants = [senderID, receiverID].sort();
 
     let conversation = await Conversation.findOne({
@@ -23,6 +25,7 @@ exports.sendMessage = async (req, res, next) => {
 
     let imageOrVideoUrl = null;
     let contentType = null;
+ 
 
     if (file) {
       const uploadfile = await uploadfiletocloudinary(file);

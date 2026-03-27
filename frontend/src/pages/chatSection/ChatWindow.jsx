@@ -61,18 +61,20 @@ const ChatWindow = ({ SelectedContect, setSelectedContect }) => {
 
   useEffect(() => {
     if (SelectedContect?._id && conversation?.data?.length > 0) {
-      const conversatio = conversation?.data?.find((conv) =>
+      const conversatio = conversation.data.find((conv) =>
         conv.participants.some((p) => p._id === SelectedContect?._id),
       );
-      if (conversatio._id) {
+
+      // Check if conversatio is found before accessing its properties
+      if (conversatio && conversatio._id) {
         fetchMassages(conversatio._id);
       }
     }
-  }, [SelectedContect, conversation]);
+  }, [SelectedContect, conversation, fetchMassages]);
 
   useEffect(() => {
     fetchConversation();
-  }, []);
+  }, [fetchConversation]);
 
   const scrollToBottom = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "auto" });
@@ -117,7 +119,6 @@ const ChatWindow = ({ SelectedContect, setSelectedContect }) => {
   const handleSendMessage = async () => {
     if (!SelectedContect) return;
 
-     
     if (!message.trim() && !selectedfile) return;
 
     try {
@@ -138,8 +139,11 @@ const ChatWindow = ({ SelectedContect, setSelectedContect }) => {
         formData.append("media", selectedfile, selectedfile.name);
       }
 
+      // for (let [key, value] of formData.entries()) {
+      //   console.log(`${key}:`, value);
+      // }
       // API Call
-      await sendMessage(formData);
+        sendMessage(formData);
 
       // Success ke baad saari states reset karo
       setMessage("");
@@ -191,7 +195,7 @@ const ChatWindow = ({ SelectedContect, setSelectedContect }) => {
       }, {})
     : {};
 
-  const handleReaction = (messageId, emoji) => { 
+  const handleReaction = (messageId, emoji) => {
     addReaction(messageId, emoji);
   };
 

@@ -49,39 +49,41 @@ exports.sendMessage = async (req, res, next) => {
 
     await message.save();
 
-    if(message?.content){
+    if (message?.content) {
       conversation.lastMessage = message._id;
-
     }
     conversation.unreadCount += 1;
 
     await conversation.save();
 
+    // ... message save hone ke baad
     const populatemessage = await Message.findById(message._id)
       .populate("sender", "username profilePic")
       .populate("receiver", "username profilePic");
 
-      
+    if (req.socketUserMap && req.io) {
+      const rID = receiverID.toString();
+      const receiverSocketId = req.socketUserMap.get(rID);
 
-    //emit soket event
-    if(req.socketUserMap && req.io){
-       const receiverSocketId = req.socketUserMap.get(receiverID)
-       if(receiverSocketId){
+      if (receiverSocketId) {
+        // Status update before emitting
+        populatemessage.messageStatus = "delivered";
+        await Message.updateOne(
+          { _id: message._id },
+          { messageStatus: "delivered" },
+        );
+
         req.io.to(receiverSocketId).emit("receive_message", populatemessage);
-        message.messageStatus = "delivered"
-        await message.save(); 
-
-      } 
-        
+      }
     }
 
-    response(res, 200, "Message sent successfully", populatemessage);
+    // Send final populated message to sender
+    response(res, 200, "Message sent", populatemessage);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 // get all conversation
 exports.getConversation = async (req, res, next) => {
@@ -180,20 +182,19 @@ exports.markAsRead = async (req, res, next) => {
       },
     );
 
-    //notify to sender 
+    //notify to sender
     if (req.socketUserMap && req.io) {
       //broadcast to all connecting users
       for (const message of messages) {
         const senderSocketId = req.socketUserMap.get(message.sender.toString());
         if (senderSocketId) {
           const updatedMessage = {
-            _id:message._id,
-            messageStatus:"read"
-          }
-
+            _id: message._id,
+            messageStatus: "read",
+          };
 
           req.io.to(senderSocketId).emit("message_read", updatedMessage);
-          await message.save()
+          await message.save();
         }
       }
     }
@@ -220,15 +221,15 @@ exports.deleteMessage = async (req, res, next) => {
     }
     await Message.deleteOne({ _id: messageID });
 
-     //emit soket event
+    //emit soket event
     if (req.socketUserMap && req.io) {
-       const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
-       if(receiverSocketId){
+      const receiverSocketId = req.socketUserMap.get(
+        message.receiver.toString(),
+      );
+      if (receiverSocketId) {
         req.io.to(receiverSocketId).emit("message_deleted", messageID);
-       }
-      
+      }
     }
-
 
     response(res, 200, "Message deleted successfully");
   } catch (error) {

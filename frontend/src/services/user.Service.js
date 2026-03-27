@@ -20,9 +20,9 @@ export const verifyOtp = async  (phoneNumber , phoneSuffix ,otp, email)=>{
 
 }
 
-export const logout = async ()=>{
+export const logoutUser = async ()=>{
     try {
-        const res = await axiosInstance.post("/auth/logout");
+        const res = await axiosInstance.get("/auth/logout");
         return res.data;
     } catch (error) {
         console.log('error on logout',error)

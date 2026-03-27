@@ -33,13 +33,15 @@ export const useChatStore = create((set, get) => ({
     //receive message
     socket.on("receive_message", (message) => {
       const { currentConversation } = get();
-      if (
-        currentConversation &&
-        message.conversationId === currentConversation._id
-      ) {
-        set((state) => {
-          messages: [...state.messages, message];
-        });
+
+      // Backend se 'conversation' aa raha hai, fetchMessages use 'conversationID'
+      // Isliye hum dono handle karenge
+      const incomingConvId = message.conversation?._id || message.conversation;
+
+      if (currentConversation === incomingConvId) {
+        set((state) => ({
+          messages: [...state.messages, message],
+        }));
       }
     });
 
@@ -79,9 +81,7 @@ export const useChatStore = create((set, get) => ({
     // delete msg from local state
     socket.on("message_deleted", ({ deletedmessageId }) => {
       set((state) => ({
-        messages: state.messages.filter((msg) => {
-          msg._id !== deletedmessageId;
-        }),
+        messages: state.messages.filter((msg) => msg._id !== deletedmessageId),
       }));
     });
 
